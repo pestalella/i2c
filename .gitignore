@@ -2,3 +2,6 @@ i2c.cache*
 i2c.hw*
 i2c.ip_user_files*
 i2c.run*
+i2c.sim*
+i2c.srcs*
+.vs
