@@ -53,7 +53,7 @@ task drive_read_bit;
     ck_sda = 0;
     #100 ck_scl = 'bz;   // clock high
     #300 ck_scl = 0;   // clock low
-    #100;    
+    #100;
 endtask
 
 initial begin
@@ -72,7 +72,7 @@ initial begin
     ck_sda = 'bz;
     #100 ck_scl = 'bz;   // clock high
     #300 ck_scl = 0;   // clock low
-    #100;    
+    #100;
 
     drive_stop_condition();
 end

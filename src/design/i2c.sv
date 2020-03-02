@@ -14,6 +14,7 @@ module i2c (
 );
 
 logic ck_sda_r;
+logic ck_scl_r;
 logic [8:0] start_counter;
 logic [8:0] stop_counter;
 
@@ -36,6 +37,7 @@ logic read_write_selected;
 
 logic unused;
 
+`ifndef VIVADO_SIMULATION
 ila_0 fpga_ila(
         .clk(clk100),
         .probe0(address),
@@ -55,18 +57,7 @@ ila_0 fpga_ila(
         .probe14(unused),
         .probe15(unused)
 );
-
-initial begin
-    ck_sda_r <= 0;
-    start_counter <= 0;
-    stop_counter <= 0;
-    reading_address <= 0;
-    address <= '0;
-    read_write <= 0;
-    read_start <= 0;
-    bits_read <= '0;
-    bits_read_prev <= '0;
-end
+`endif
 
 assign start_detected = |start_counter;
 assign stop_detected = |stop_counter;
@@ -81,12 +72,45 @@ assign start_detected_w = start_detected;
 
 always_ff @(posedge clk100 or posedge reset) begin
     if (reset) begin
+        read_write_selected <= 0;
+        bits_read_prev <= '0;
+        address <= '0;
         ck_sda_r <= 0;
+        ck_scl_r <= 0;
         start_counter <= 0;
         stop_counter <= 0;
         reading_address <= 0;
         read_write <= 0;
     end else begin
+        if (~ck_scl_r & ck_scl & ~ack_in_progress) begin  // posedge ck_scl
+            read_start <= (bits_read_prev == 8) && ~(|bits_read);
+
+            bits_read_prev <= bits_read;
+            if (reading_address) begin
+                if (read_start) begin
+                    read_address_end <= 0;
+                    address <= {6'b0, ck_sda};
+                    bits_read <= 1;
+                    read_write_selected <= 0;
+                end else begin
+                    if (bits_read <= 4'd6) begin
+                        address <= {address[5:0], ck_sda};
+                        bits_read <= bits_read + 1;
+                    end else if (bits_read == 4'd7) begin
+                        read_write <= ck_sda;
+                        bits_read <= bits_read + 1;
+                    end else begin
+                        read_address_end <= 1;
+                        read_write_selected <= 1;
+                        bits_read <= 0;
+                    end
+                end
+            end else begin
+                bits_read <= 0;
+            end
+        end
+        ck_scl_r <= ck_scl;
+
         if (|start_counter) begin
             start_counter <= start_counter + 1;
         end
@@ -117,36 +141,6 @@ always_ff @(posedge clk100 or posedge reset) begin
                 end
                 ck_sda_r <= ck_sda;
             end
-        end
-    end
-end
-
-always_ff @(posedge ck_scl) begin
-    if (~reset & ~ack_in_progress) begin
-        read_start <= (bits_read_prev == 8) && ~(|bits_read);
-
-        bits_read_prev <= bits_read;
-        if (reading_address) begin
-            if (read_start) begin
-                read_address_end <= 0;
-                address <= {6'b0, ck_sda};
-                bits_read <= 1;
-                read_write_selected <= 0;
-            end else begin
-                if (bits_read <= 4'd6) begin
-                    address <= {address[5:0], ck_sda};
-                    bits_read <= bits_read + 1;
-                end else if (bits_read == 4'd7) begin
-                    read_write <= ck_sda;
-                    bits_read <= bits_read + 1;
-                end else begin
-                    read_address_end <= 1;
-                    read_write_selected <= 1;
-                    bits_read <= 0;
-                end
-            end
-        end else begin
-            bits_read <= 0;
         end
     end
 end
