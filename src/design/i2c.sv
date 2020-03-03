@@ -15,8 +15,8 @@ module i2c (
 
 logic ck_sda_r;
 logic ck_scl_r;
-logic [8:0] start_counter;
-logic [8:0] stop_counter;
+logic [4:0] start_counter;
+logic [4:0] stop_counter;
 
 logic [6:0] address;
 logic read_write;
@@ -73,10 +73,11 @@ assign start_detected_w = start_detected;
 always_ff @(posedge clk100 or posedge reset) begin
     if (reset) begin
         read_write_selected <= 0;
+        bits_read <= '0;
         bits_read_prev <= '0;
         address <= '0;
-        ck_sda_r <= 0;
-        ck_scl_r <= 0;
+        ck_sda_r <= 1;
+        ck_scl_r <= 1;
         start_counter <= 0;
         stop_counter <= 0;
         reading_address <= 0;
@@ -129,18 +130,13 @@ always_ff @(posedge clk100 or posedge reset) begin
         end
 
         if (~ack_in_progress) begin
-            if (ck_sda_r & ~ck_sda) begin  // negedge ck_sda
-                if (ck_scl) begin
-                    start_counter <= 1;
-                    reading_address <= 1;
-                end
-                ck_sda_r <= ck_sda;
-            end else if (~ck_sda_r & ck_sda) begin  // posedge ck_sda
-                if (ck_scl) begin
-                    stop_counter <= 1;
-                end
-                ck_sda_r <= ck_sda;
+            if (ck_sda_r & ~ck_sda & ck_scl) begin  // negedge ck_sda
+                start_counter <= 1;
+                reading_address <= 1;
+            end else if (~ck_sda_r & ck_sda & ck_scl) begin  // posedge ck_sda
+                stop_counter <= 1;
             end
+            ck_sda_r <= ck_sda;
         end
     end
 end
