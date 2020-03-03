@@ -43,17 +43,17 @@ endtask
 task drive_address(bit [6:0] addr);
     for (int i = 0; i < 7; i++) begin
         ck_sda = addr[6-i] ? 'bz : 0;
-        #100 ck_scl = 'bz;   // clock high
-        #300 ck_scl = 0;   // clock low
-        #100;
+        #150 ck_scl = 'bz;   // clock high
+        #200 ck_scl = 0;   // clock low
+        #150;
     end
 endtask
 
 task drive_read_bit;
     ck_sda = 0;
-    #100 ck_scl = 'bz;   // clock high
-    #300 ck_scl = 0;   // clock low
-    #100;
+    #150 ck_scl = 'bz;   // clock high
+    #200 ck_scl = 0;   // clock low
+    #150;
 endtask
 
 initial begin
@@ -69,10 +69,15 @@ initial begin
     drive_address(7'h42);
     drive_read_bit();
 
+    // read acknowledgement from slave
     ck_sda = 'bz;
-    #100 ck_scl = 'bz;   // clock high
-    #300 ck_scl = 0;   // clock low
-    #100;
+    #150 ck_scl = 'bz;   // clock high
+    #200 ck_scl = 0;   // clock low
+
+    // stop condition
+    #150 ck_sda = 0;  // pull SDA low, to trigger the stop condition later
+    #150 ck_scl = 'bz;   // clock high
+    #300 ck_sda = 'bz;
 
     drive_stop_condition();
 end
