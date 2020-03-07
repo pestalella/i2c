@@ -2,6 +2,9 @@
 
 module tb_i2c;
 
+localparam I2C_CLK_PERIOD_DIV10 = 100;
+localparam I2C_CLK_PERIOD = 10*I2C_CLK_PERIOD_DIV10;
+
 logic clk;
 logic reset;
 tri1 ck_scl_w;
@@ -29,31 +32,31 @@ initial begin
 end
 
 task drive_start_condition;
-    #100 ck_sda = 0;
-    #100 ck_scl = 0;
-    #500;
+    #(2*I2C_CLK_PERIOD_DIV10) ck_sda = 0;
+    #(2*I2C_CLK_PERIOD_DIV10) ck_scl = 0;
+    #(10*I2C_CLK_PERIOD_DIV10);
 endtask
 
 task drive_stop_condition;
-    #100 ck_scl = 'bz;
-    #100 ck_sda = 'bz;
-    #500;
+    #(2*I2C_CLK_PERIOD_DIV10) ck_scl = 'bz;
+    #(2*I2C_CLK_PERIOD_DIV10) ck_sda = 'bz;
+    #(10*I2C_CLK_PERIOD_DIV10);
 endtask
 
 task drive_address(bit [6:0] addr);
     for (int i = 0; i < 7; i++) begin
         ck_sda = addr[6-i] ? 'bz : 0;
-        #150 ck_scl = 'bz;   // clock high
-        #200 ck_scl = 0;   // clock low
-        #150;
+        #(3*I2C_CLK_PERIOD_DIV10) ck_scl = 'bz;   // clock high
+        #(4*I2C_CLK_PERIOD_DIV10) ck_scl = 0;   // clock low
+        #(3*I2C_CLK_PERIOD_DIV10);
     end
 endtask
 
 task drive_read_bit;
     ck_sda = 0;
-    #150 ck_scl = 'bz;   // clock high
-    #200 ck_scl = 0;   // clock low
-    #150;
+    #(3*I2C_CLK_PERIOD_DIV10) ck_scl = 'bz;   // clock high
+    #(4*I2C_CLK_PERIOD_DIV10) ck_scl = 0;   // clock low
+    #(3*I2C_CLK_PERIOD_DIV10);
 endtask
 
 initial begin
@@ -63,7 +66,7 @@ initial begin
 
     // Reset the DUT
     reset = 1;
-    #10 reset = 0;
+    #(I2C_CLK_PERIOD) reset = 0;
 
     drive_start_condition();
     drive_address(7'h42);
@@ -71,13 +74,13 @@ initial begin
 
     // read acknowledgement from slave
     ck_sda = 'bz;
-    #150 ck_scl = 'bz;   // clock high
-    #200 ck_scl = 0;   // clock low
+    #(3*I2C_CLK_PERIOD_DIV10) ck_scl = 'bz;   // clock high
+    #(4*I2C_CLK_PERIOD_DIV10) ck_scl = 0;   // clock low
 
     // stop condition
-    #150 ck_sda = 0;  // pull SDA low, to trigger the stop condition later
-    #150 ck_scl = 'bz;   // clock high
-    #300 ck_sda = 'bz;
+    #(3*I2C_CLK_PERIOD_DIV10) ck_sda = 0;  // pull SDA low, to trigger the stop condition later
+    #(3*I2C_CLK_PERIOD_DIV10) ck_scl = 'bz;   // clock high
+    #(6*I2C_CLK_PERIOD_DIV10) ck_sda = 'bz;
 
     drive_stop_condition();
 end

@@ -11,15 +11,15 @@
       </db_ref>
    </db_ref_list>
    <zoom_setting>
-      <ZoomStartTime time="0fs"></ZoomStartTime>
-      <ZoomEndTime time="6350001fs"></ZoomEndTime>
-      <Cursor1Time time="11000000fs"></Cursor1Time>
+      <ZoomStartTime time="3143333fs"></ZoomStartTime>
+      <ZoomEndTime time="6548334fs"></ZoomEndTime>
+      <Cursor1Time time="5273333fs"></Cursor1Time>
    </zoom_setting>
    <column_width_setting>
       <NameColumnWidth column_width="232"></NameColumnWidth>
-      <ValueColumnWidth column_width="169"></ValueColumnWidth>
+      <ValueColumnWidth column_width="165"></ValueColumnWidth>
    </column_width_setting>
-   <WVObjectSize size="10" />
+   <WVObjectSize size="17" />
    <wvobject fp_name="/tb_i2c/clk" type="logic">
       <obj_property name="ElementShortName">clk</obj_property>
       <obj_property name="ObjectShortName">clk</obj_property>
@@ -28,25 +28,13 @@
       <obj_property name="ElementShortName">reset</obj_property>
       <obj_property name="ObjectShortName">reset</obj_property>
    </wvobject>
-   <wvobject fp_name="/tb_i2c/ck_scl_w" type="logic">
-      <obj_property name="ElementShortName">ck_scl_w</obj_property>
-      <obj_property name="ObjectShortName">ck_scl_w</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_i2c/ck_sda_w" type="logic">
-      <obj_property name="ElementShortName">ck_sda_w</obj_property>
-      <obj_property name="ObjectShortName">ck_sda_w</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_i2c/ck_sda" type="logic">
+   <wvobject fp_name="/tb_i2c/dut/ck_sda" type="logic">
       <obj_property name="ElementShortName">ck_sda</obj_property>
       <obj_property name="ObjectShortName">ck_sda</obj_property>
    </wvobject>
-   <wvobject fp_name="/tb_i2c/ck_scl" type="logic">
+   <wvobject fp_name="/tb_i2c/dut/ck_scl" type="logic">
       <obj_property name="ElementShortName">ck_scl</obj_property>
       <obj_property name="ObjectShortName">ck_scl</obj_property>
-   </wvobject>
-   <wvobject fp_name="/tb_i2c/start_detected" type="logic">
-      <obj_property name="ElementShortName">start_detected</obj_property>
-      <obj_property name="ObjectShortName">start_detected</obj_property>
    </wvobject>
    <wvobject fp_name="/tb_i2c/ack_in_progress" type="logic">
       <obj_property name="ElementShortName">ack_in_progress</obj_property>
@@ -56,8 +44,48 @@
       <obj_property name="ElementShortName">start_detected</obj_property>
       <obj_property name="ObjectShortName">start_detected</obj_property>
    </wvobject>
+   <wvobject fp_name="/tb_i2c/dut/start_counter" type="array">
+      <obj_property name="ElementShortName">start_counter[4:0]</obj_property>
+      <obj_property name="ObjectShortName">start_counter[4:0]</obj_property>
+   </wvobject>
    <wvobject fp_name="/tb_i2c/dut/stop_detected" type="logic">
       <obj_property name="ElementShortName">stop_detected</obj_property>
       <obj_property name="ObjectShortName">stop_detected</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_i2c/dut/stop_counter" type="array">
+      <obj_property name="ElementShortName">stop_counter[4:0]</obj_property>
+      <obj_property name="ObjectShortName">stop_counter[4:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_i2c/dut/read_write" type="logic">
+      <obj_property name="ElementShortName">read_write</obj_property>
+      <obj_property name="ObjectShortName">read_write</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_i2c/dut/read_address_end" type="logic">
+      <obj_property name="ElementShortName">read_address_end</obj_property>
+      <obj_property name="ObjectShortName">read_address_end</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_i2c/dut/read_write_selected" type="logic">
+      <obj_property name="ElementShortName">read_write_selected</obj_property>
+      <obj_property name="ObjectShortName">read_write_selected</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_i2c/dut/bits_read" type="array">
+      <obj_property name="ElementShortName">bits_read[3:0]</obj_property>
+      <obj_property name="ObjectShortName">bits_read[3:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_i2c/dut/bits_read_prev" type="array">
+      <obj_property name="ElementShortName">bits_read_prev[3:0]</obj_property>
+      <obj_property name="ObjectShortName">bits_read_prev[3:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_i2c/dut/address" type="array">
+      <obj_property name="ElementShortName">address[6:0]</obj_property>
+      <obj_property name="ObjectShortName">address[6:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_i2c/dut/start_detected_w" type="logic">
+      <obj_property name="ElementShortName">start_detected_w</obj_property>
+      <obj_property name="ObjectShortName">start_detected_w</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_i2c/dut/reading_address" type="logic">
+      <obj_property name="ElementShortName">reading_address</obj_property>
+      <obj_property name="ObjectShortName">reading_address</obj_property>
    </wvobject>
 </wave_config>
