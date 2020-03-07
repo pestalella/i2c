@@ -15,129 +15,108 @@ module i2c (
 
 logic ck_sda_r;
 logic ck_scl_r;
-logic [4:0] start_counter;
-logic [4:0] stop_counter;
 
 logic [6:0] address;
 logic read_write;
-logic [3:0] bits_read_prev;
 logic [3:0] bits_read;
-logic read_start;
-logic reading_address;
 
-logic start_detected;
-logic stop_detected;
-
-logic read_address_end;
-logic [7:0] ack_in_progress_counter;
-logic ack_counting;
+logic [5:0] ack_counter;
 logic ack_in_progress;
 
-logic read_write_selected;
+logic clk_posedge_detect;
 
 logic unused;
+typedef enum bit [2:0] {IDLE, ADDRESS, RDWR_SEL, ACK} FsmState;
+FsmState state;
+
 
 `ifndef VIVADO_SIMULATION
 ila_0 fpga_ila(
         .clk(clk100),
         .probe0(address),
-        .probe1(reading_address),
-        .probe2(start_detected),
-        .probe3(stop_detected),
+        .probe1(clk_posedge_detect),
+        .probe2(unused),
+        .probe3(unused),
         .probe4(ck_scl),
         .probe5(ck_sda),
         .probe6(bits_read),
-        .probe7(read_start),
-        .probe8(ack_in_progress_counter),
+        .probe7(unused),
+        .probe8(ack_counter),
         .probe9(ack_in_progress),
-        .probe10(bits_read_prev),
+        .probe10(state),
         .probe11(read_write),
-        .probe12(read_write_selected),
-        .probe13(read_address_end),
+        .probe12(unused),
+        .probe13(unused),
         .probe14(unused),
         .probe15(unused)
 );
 `endif
 
-assign start_detected = |start_counter;
-assign stop_detected = |stop_counter;
-//assign ack_in_progress = |ack_in_progress_counter & ~(&ack_in_progress_counter);
-
 assign ck_sda = ack_in_progress ? 0 : 'bz;
 //assign ck_sda = 'bz;
-assign ack_counting = |ack_in_progress_counter & ~(&ack_in_progress_counter);
-assign ack_in_progress = read_write_selected & ck_scl & (bits_read_prev == 4'd8) & (address == 7'h42);
+
+//assign ack_in_progress = ck_scl & (state == ACK);
+assign ack_in_progress = (state == ACK);
 assign ack_in_progress_w = ack_in_progress;
-assign start_detected_w = start_detected;
+
+assign start_detected_w = 'bz;
 
 always_ff @(posedge clk100 or posedge reset) begin
     if (reset) begin
-        read_write_selected <= 0;
         bits_read <= '0;
-        bits_read_prev <= '0;
         address <= '0;
         ck_sda_r <= 1;
         ck_scl_r <= 1;
-        start_counter <= 0;
-        stop_counter <= 0;
-        reading_address <= 0;
         read_write <= 0;
+        ack_counter <= 0;
+        state = IDLE;
+        clk_posedge_detect <= 0;
     end else begin
-        if (~ck_scl_r & ck_scl & ~ack_in_progress) begin  // posedge ck_scl
-            read_start <= (bits_read_prev == 8) && ~(|bits_read);
-
-            bits_read_prev <= bits_read;
-            if (reading_address) begin
-                if (read_start) begin
-                    read_address_end <= 0;
-                    address <= {6'b0, ck_sda};
-                    bits_read <= 1;
-                    read_write_selected <= 0;
-                end else begin
-                    if (bits_read <= 4'd6) begin
-                        address <= {address[5:0], ck_sda};
-                        bits_read <= bits_read + 1;
-                    end else if (bits_read == 4'd7) begin
-                        read_write <= ck_sda;
-                        bits_read <= bits_read + 1;
-                    end else begin
-                        read_address_end <= 1;
-                        read_write_selected <= 1;
+        clk_posedge_detect <= 0;
+        if (|ack_counter) begin
+            ack_counter <= ack_counter + 1;
+        end else begin
+            case (state)
+                IDLE: begin
+                    if (ck_sda_r & ~ck_sda & ck_scl) begin  // negedge ck_sda
+                        clk_posedge_detect <= 1;
+                        address <= 0;
                         bits_read <= 0;
+                        state <= ADDRESS;
                     end
                 end
-            end else begin
-                bits_read <= 0;
-            end
+                ADDRESS: begin
+                    if (~ck_scl_r & ck_scl) begin  // posedge ck_scl
+                        clk_posedge_detect <= 1;
+                        if (bits_read < 4'd7) begin
+                            address <= {address[5:0], ck_sda};
+                            state <= ADDRESS;  // keep the same state
+                            bits_read <= bits_read + 1;
+                        end else if (bits_read == 4'd7) begin
+                            bits_read <= 0;
+                            read_write <= ck_sda;
+                            state <= RDWR_SEL;
+                        end
+                    end
+                end
+                RDWR_SEL: begin
+                    if (~ck_scl_r & ck_scl) begin  // posedge ck_scl
+                        clk_posedge_detect <= 1;
+                        ack_counter <= 1;
+                        // ACK if address is 0x42
+                        state <= (address==42)? ACK : IDLE;
+                    end
+                end
+                ACK: begin
+                    if (~ck_scl_r & ck_scl) begin  // posedge ck_scl
+                        clk_posedge_detect <= 1;
+                        state <= IDLE;
+                    end
+                end
+            endcase
         end
         ck_scl_r <= ck_scl;
-
-        if (|start_counter) begin
-            start_counter <= start_counter + 1;
-        end
-
-        if (|stop_counter) begin
-            stop_counter <= stop_counter + 1;
-        end
-
-        if (~read_address_end) begin
-            ack_in_progress_counter <= 0;
-        end else if (read_address_end && ~(|ack_in_progress_counter)) begin
-            ack_in_progress_counter <= 50;
-            reading_address <= 0;
-        end else if (ack_in_progress) begin
-            ack_in_progress_counter <= ack_in_progress_counter + 1;
-        end
-
-        if (~ack_in_progress) begin
-            if (ck_sda_r & ~ck_sda & ck_scl) begin  // negedge ck_sda
-                start_counter <= 1;
-                reading_address <= 1;
-            end else if (~ck_sda_r & ck_sda & ck_scl) begin  // posedge ck_sda
-                stop_counter <= 1;
-            end
-            ck_sda_r <= ck_sda;
-        end
+        ck_sda_r <= ck_sda;
     end
 end
 
