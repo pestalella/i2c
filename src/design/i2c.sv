@@ -20,10 +20,11 @@ logic [6:0] address;
 logic read_write;
 logic [3:0] bits_read;
 
-logic [5:0] ack_counter;
+logic [7:0] ack_counter;
 logic ack_in_progress;
 
 logic clk_posedge_detect;
+logic raw_clk_posedge_detect;
 
 logic unused;
 typedef enum bit [2:0] {IDLE, ADDRESS, RDWR_SEL, ACK} FsmState;
@@ -35,12 +36,12 @@ ila_0 fpga_ila(
         .clk(clk100),
         .probe0(address),
         .probe1(clk_posedge_detect),
-        .probe2(unused),
-        .probe3(unused),
+        .probe2(ck_sda_r),
+        .probe3(ck_scl_r),
         .probe4(ck_scl),
         .probe5(ck_sda),
         .probe6(bits_read),
-        .probe7(unused),
+        .probe7(raw_clk_posedge_detect),
         .probe8(ack_counter),
         .probe9(ack_in_progress),
         .probe10(state),
@@ -56,7 +57,7 @@ assign ck_sda = ack_in_progress ? 0 : 'bz;
 //assign ck_sda = 'bz;
 
 //assign ack_in_progress = ck_scl & (state == ACK);
-assign ack_in_progress = (state == ACK);
+assign ack_in_progress = (state == ACK) & (|ack_counter);
 assign ack_in_progress_w = ack_in_progress;
 
 assign start_detected_w = 'bz;
@@ -73,6 +74,7 @@ always_ff @(posedge clk100 or posedge reset) begin
         clk_posedge_detect <= 0;
     end else begin
         clk_posedge_detect <= 0;
+        raw_clk_posedge_detect <= (~ck_scl_r & ck_scl);
         if (|ack_counter) begin
             ack_counter <= ack_counter + 1;
         end else begin
@@ -102,9 +104,10 @@ always_ff @(posedge clk100 or posedge reset) begin
                 RDWR_SEL: begin
                     if (~ck_scl_r & ck_scl) begin  // posedge ck_scl
                         clk_posedge_detect <= 1;
-                        ack_counter <= 1;
+
                         // ACK if address is 0x42
-                        state <= (address==42)? ACK : IDLE;
+                        ack_counter <= (address==7'h42)?   1 : 0;
+                        state       <= (address==7'h42)? ACK : IDLE;
                     end
                 end
                 ACK: begin
